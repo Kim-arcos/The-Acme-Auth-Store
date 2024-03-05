@@ -2,6 +2,8 @@ const pg = require('pg');
 const client = new pg.Client(process.env.DATABASE_URL || 'postgres://localhost/acme_auth_store_db');
 const uuid = require('uuid');
 const bcrypt = require('bcrypt');
+const jwt = require('jsonwebtoken');
+const JWT_SECRET = process.env.JWT_SECRET || 'secret';
 
 const createTables = async()=> {
   const SQL = `
@@ -60,22 +62,35 @@ const destroyFavorite = async({ user_id, id })=> {
 
 const authenticate = async({ username, password })=> {
   const SQL = `
-    SELECT id, username FROM users WHERE username=$1;
+    SELECT id, password
+    FROM users
+    WHERE username=$1;
   `;
   const response = await client.query(SQL, [username]);
   if(!response.rows.length){
     const error = Error('not authorized');
     error.status = 401;
     throw error;
+  } else {
+    const user = response.rows[0];
+    const correctPassword = await bcrypt.compare(password, user.password);
+    if(correctPassword) {
+      const token = jwt.sign({ id: user.id }, JWT_SECRET);
+      return { validusers: true, token};
+    } else {
+      return { validUser: false }
+    }
   }
-  return { token: response.rows[0].id };
 };
 
 const findUserWithToken = async(id)=> {
+  const decoded = kwt.verify(token, JWT_SECRET);
   const SQL = `
-    SELECT id, username FROM users WHERE id=$1;
+    SELECT id, username 
+    FROM users 
+    WHERE id=$1;
   `;
-  const response = await client.query(SQL, [id]);
+  const response = await client.query(SQL, [decoded.id]);
   if(!response.rows.length){
     const error = Error('not authorized');
     error.status = 401;
