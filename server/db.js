@@ -76,15 +76,16 @@ const authenticate = async({ username, password })=> {
     const correctPassword = await bcrypt.compare(password, user.password);
     if(correctPassword) {
       const token = jwt.sign({ id: user.id }, JWT_SECRET);
-      return { validusers: true, token};
+      const userWithToken = await findUserWithToken(token);
+      return { user: userWithToken, token };
     } else {
-      return { validUser: false }
+      return { user: null, token: null };
     }
   }
 };
 
-const findUserWithToken = async(id)=> {
-  const decoded = kwt.verify(token, JWT_SECRET);
+const findUserWithToken = async(token)=> {
+  const decoded = jwt.verify(token, JWT_SECRET);
   const SQL = `
     SELECT id, username 
     FROM users 

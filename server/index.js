@@ -72,7 +72,7 @@ app.get('/api/users', async(req, res, next)=> {
 
 app.get('/api/users/:id/favorites', isLoggedIn, async(req, res, next)=> {
   try {
-    if (req.user.id !== req.params.userId) {
+    if (req.params.id !== req.params.userId) {
       const error = Error('not authorized');
       error.status = 401;
       throw error;
